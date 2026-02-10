@@ -39,4 +39,4 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ruby
-          ./scripts/cd/easypanel-deploy.sh
+          bash ./scripts/cd/easypanel-deploy.sh

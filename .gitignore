@@ -1,0 +1,3 @@
+# Deployment secrets/local overrides
+.deploy.env
+.secrets.env

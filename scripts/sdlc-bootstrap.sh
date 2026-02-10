@@ -99,10 +99,33 @@ upload_file() {
   local b64
   b64=$(ruby -rbase64 -e 'print Base64.strict_encode64(File.binread(ARGV[0]))' "$file")
 
-  $GH_BIN api -X PUT "repos/${FULL_REPO}/contents/${rel}" \
-    -f message="bootstrap: add ${rel}" \
-    -f content="$b64" \
-    -f branch="main" >/dev/null
+  # Idempotent update: include sha if the file already exists.
+  local sha=""
+  if existing_json=$($GH_BIN api "repos/${FULL_REPO}/contents/${rel}?ref=main" 2>/dev/null); then
+    sha=$(ruby -rjson -e '
+      begin
+        d = JSON.parse(STDIN.read)
+      rescue
+        exit 0
+      end
+      if d.is_a?(Hash) && d["type"] == "file" && d["sha"].is_a?(String)
+        print d["sha"]
+      end
+    ' <<<"$existing_json")
+  fi
+
+  if [[ -n "$sha" ]]; then
+    $GH_BIN api -X PUT "repos/${FULL_REPO}/contents/${rel}" \
+      -f message="bootstrap: update ${rel}" \
+      -f content="$b64" \
+      -f sha="$sha" \
+      -f branch="main" >/dev/null
+  else
+    $GH_BIN api -X PUT "repos/${FULL_REPO}/contents/${rel}" \
+      -f message="bootstrap: add ${rel}" \
+      -f content="$b64" \
+      -f branch="main" >/dev/null
+  fi
 }
 
 # Ensure default branch exists by creating README first.

@@ -79,15 +79,22 @@ fi
 EXCLUDES=(
   './.secrets.env'
   './.deploy.env'
-  './.local'
-  './.git'
+  './.local/'
+  './.git/'
 )
 
 is_excluded() {
   local p="$1"
   for ex in "${EXCLUDES[@]}"; do
-    if [[ "$p" == $ex* ]]; then
-      return 0
+    # Directory exclusions are expressed with a trailing slash.
+    if [[ "$ex" == */ ]]; then
+      if [[ "$p" == "$ex"* ]]; then
+        return 0
+      fi
+    else
+      if [[ "$p" == "$ex" ]]; then
+        return 0
+      fi
     fi
   done
   return 1
